@@ -1,48 +1,39 @@
 [app]
 
-# App 信息
+# App info
 title = Audio Booster
 package.name = audiobooster
 package.domain = com.audiobooster
 source.dir = .
-source.include_exts = py,png,jpg,kv,atlas
+source.include_exts = py,png,jpg,kv,atlas,json
 version = 1.0.0
 
-# 依赖
+# Requirements (minimal, avoid problematic packages)
 requirements = python3,
     kivy==2.3.0,
-    pydub,
     numpy,
-    scipy,
-    soundfile,
-    cffi,
-    plyer
+    pillow
 
-# Android 配置
-android.permissions = READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,INTERNET
+# Android config
+android.permissions = READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,INTERNET,MANAGE_EXTERNAL_STORAGE
 android.api = 33
 android.minapi = 24
 android.ndk = 25b
-android.archs = arm64-v8a, armeabi-v7a
+android.archs = arm64-v8a
 android.accept_sdk_license = True
 
-# 界面
+# Interface
 orientation = portrait
 fullscreen = 0
 
-# 图标和启动画面
+# Icon and splash
 icon.filename = %(source.dir)s/assets/icon.png
 presplash.filename = %(source.dir)s/assets/presplash.png
 
-# 构建
+# Build
 android.release_artifact = apk
-# android.debug_artifact = aab  # 如果要 Play Store 用 AAB
 
-# 包含 ffmpeg（pydub 依赖）
-android.add_libs_arm64-v8a = libs/arm64-v8a/*
-android.add_libs_armeabi-v7a = libs/armeabi-v7a/*
-
-# 日志级别
+# Log level
 log_level = 2
 
 [buildozer]
