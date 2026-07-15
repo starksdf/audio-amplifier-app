@@ -38,13 +38,11 @@ jobs:
           restore-keys: buildozer-${{ runner.os }}-
 
       - name: Build APK
-        run: |
-          cd audio-amplifier-app
-          buildozer android debug 2>&1 | tail -50
+        run: buildozer android debug 2>&1 | tail -50
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: audio-booster-apk
-          path: audio-amplifier-app/bin/*.apk
+          path: bin/*.apk
           if-no-files-found: error
