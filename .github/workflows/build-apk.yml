@@ -14,26 +14,67 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build APK with Docker
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies
         run: |
-          docker run --rm \
-            -v ${{ github.workspace }}:/app \
-            -w /app \
-            -e BUILDOZER_WARN_ON_ROOT=0 \
-            kivy/buildozer \
-            buildozer android debug 2>&1 | tee build.log
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            git zip unzip openjdk-17-jdk autoconf libtool \
+            pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev \
+            libtinfo5 cmake libffi-dev libssl-dev lld
+
+      - name: Install buildozer
+        run: |
+          pip install --upgrade pip setuptools
+          pip install buildozer cython==3.0.12
+
+      - name: Cache buildozer
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.buildozer
+            .buildozer
+          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            buildozer-${{ runner.os }}-
+
+      - name: Build debug APK
+        run: |
+          export BUILDOZER_WARN_ON_ROOT=0
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          buildozer android debug 2>&1 | tail -200
+
+      - name: Find APK
+        id: find-apk
+        run: |
+          echo "=== Looking for APK ==="
+          find . -name "*.apk" -type f 2>/dev/null
+          APK=$(find . -name "*.apk" -type f | head -1)
+          if [ -n "$APK" ]; then
+            echo "Found APK: $APK"
+            echo "apk_path=$APK" >> $GITHUB_OUTPUT
+          else
+            echo "No APK found!"
+            echo "=== bin/ contents ==="
+            ls -la bin/ 2>/dev/null || echo "bin/ not found"
+            echo "=== .buildozer/ contents ==="
+            ls -la .buildozer/ 2>/dev/null || echo ".buildozer/ not found"
+          fi
 
       - name: Upload APK
-        if: success()
+        if: steps.find-apk.outputs.apk_path != ''
         uses: actions/upload-artifact@v4
         with:
           name: audio-booster-apk
-          path: bin/*.apk
-          if-no-files-found: warn
+          path: ${{ steps.find-apk.outputs.apk_path }}
 
-      - name: Upload build log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: build.log
+      - name: Debug - upload all if no APK
+        if: steps.find-apk.outputs.apk_path == ''
+        run: |
+          echo "Build failed to produce APK. Uploading debug info..."
+          find . -name "*.log" -type f | head -20
+          ls -la . 2>/dev/null
